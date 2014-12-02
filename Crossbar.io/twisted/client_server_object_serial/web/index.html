@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+   <body>
+      <h1>Hello WAMP</h1>
+      <p>Open JavaScript console to watch output.</p>
+      <script>AUTOBAHN_DEBUG = true;</script>
+      <script src="autobahn.min.js"></script>
+
+      <script>
+         // the URL of the WAMP Router (Crossbar.io)
+         //
+         var wsuri;
+         if (document.location.origin == "file://") {
+            wsuri = "ws://127.0.0.1:8080/ws";
+
+         } else {
+            wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" +
+                        document.location.host + "/ws";
+         }
+         wsuri = "ws://127.0.0.1:8080/ws";
+
+
+         // the WAMP connection to the Router
+         //
+         var connection = new autobahn.Connection({
+            url: wsuri,
+            realm: "realm1"
+         });
+
+
+         // timers
+         //
+         var t1, t2;
+
+
+         // fired when connection is established and session attached
+         //
+         connection.onopen = function (session, details) {
+
+            console.log("Connected");
+
+            // CALL a remote procedure every second
+            //
+            var x = 0;
+
+            t2 = setInterval(function () {
+
+               session.call("acs.device.manager.utcnow").then(
+                  function (res) {
+                     console.log("utcnow() result:", res);
+                  },
+                  function (err) {
+                     console.log("utcnow() error:", err);
+                  }
+               );
+
+               session.call("acs.device.manager.name").then(
+                  function (res) {
+                     console.log("name() result:", res);
+                  },
+                  function (err) {
+                     console.log("name() error:", err);
+                  }
+               );
+
+               x += 3;
+            }, 1000);
+         };
+
+
+         // fired when connection was lost (or could not be established)
+         //
+         connection.onclose = function (reason, details) {
+            console.log("Connection lost: " + reason);
+            if (t1) {
+               clearInterval(t1);
+               t1 = null;
+            }
+            if (t2) {
+               clearInterval(t2);
+               t2 = null;
+            }
+         }
+
+
+         // now actually open the connection
+         //
+         connection.open();
+
+      </script>
+   </body>
+</html>
